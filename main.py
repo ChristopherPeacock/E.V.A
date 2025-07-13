@@ -26,7 +26,7 @@ def interactive_loop():
 
 def main():
     eyes.animate_eyes()
-    print(f"\n[JARVIS] Hello {os.getenv('NAME')}. What are we doing today?")
+    print(f"\n[E.V.A] Hello {os.getenv('NAME')}. What are we doing today?")
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--ingest', help='URL to scrape and vectorise')

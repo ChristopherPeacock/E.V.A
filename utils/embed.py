@@ -67,7 +67,7 @@ tools = [
    
 agent_prompt = PromptTemplate(
     input_variables=["input", "agent_scratchpad", "tools", "tool_names"],
-    template="""You an AI assistant for IT and cybersecurity tasks.
+    template="""You are E.V.A an AI assistant for IT and cybersecurity tasks.
 
 You have access to the following tools:
 {tools}
