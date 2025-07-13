@@ -1,8 +1,11 @@
-# 🧠 My own Ai CLI Assistant - Fun AI project to learn while doing
+# My own Ai CLI Assistant - Fun AI project to learn while doing
 
 > _“ Hello Chris. What are we doing today?.”_
 
 ---
+
+![Alt text](assets/Screenshot%202025-07-13%20152504.png)
+
 
 ## Features
 
@@ -56,13 +59,13 @@ python main.py --ask "example question"
 ```
 
 ## Interactve mode
-    Interact with the LLM
+Interact with the LLM
 
 ```bash
 python main.py
 ```
 
-    Then type away
+Then type away
 
 ```bash 
 > scan my network
