@@ -12,16 +12,12 @@ from typing import Any
 from langchain import hub
 import os
 import subprocess
-import json
 import shutil
-
-from tools import ping
-
+from tools import ping, nmap
 
 embedder = OllamaEmbeddings(model="llama3.1:8b")
 VECTOR_PATH = "./vectorstore/chroma_index"
 
-# Memory setup - suppress deprecation warning
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -48,35 +44,6 @@ class CleanStreamingHandler(BaseCallbackHandler):
                                                  ['thought:', 'action:', 'action input:', 'observation:']):
             print(token, end="", flush=True)
             self.text += token
-
-def run_nmap(target: str) -> str:
-    """Run nmap scan on a target. Input should be an IP address or hostname."""
-
-    if not shutil.which("nmap"):
-        return """Nmap is not installed on this system. 
-            To install:
-                - Windows: Download from https://nmap.org/download.html
-                - Linux: sudo apt install nmap (Ubuntu/Debian) or sudo yum install nmap (CentOS/RHEL)
-                - macOS: brew install nmap
-
-            Alternative: I can use ping to check host connectivity."""
-    try:
-        result = subprocess.run(
-            ["nmap", "-sn", target], 
-            capture_output=True, 
-            text=True, 
-            timeout=30
-        )
-        if result.returncode == 0:
-            return f"Nmap scan results for {target}: \n{result.stdout}"
-        else:
-            return f"Nmap scan failed: {result.stderr}"
-    except subprocess.TimeoutExpired:
-        return f"Nmap scan of {target} timed out"
-    except Exception as e:
-        return f"Error running nmap on {target}: {str(e)}"
-
-
 
 def find_file(command: str,) -> str:
     try:
@@ -116,7 +83,7 @@ tools = [
     Tool(
         name="nmap_scan",
         description="Run nmap network scan on a target IP, hostname, or network range (e.g., 192.168.1.0/24)",
-        func=run_nmap
+        func=nmap.run_nmap
     ),
     Tool(
         name="ping_host",
