@@ -3,9 +3,9 @@ import os
 from utils.scrape import scrape_url
 from utils.embed import get_vectorstore, query_jarvis
 from dotenv import load_dotenv
+from visuals import eyes
 
 load_dotenv()
-
 
 def interactive_loop():
     
@@ -25,7 +25,8 @@ def interactive_loop():
             break
 
 def main():
-    print(f"\n Hello {os.getenv('NAME')}. What are we doing today?.")
+    eyes.animate_eyes()
+    print(f"\n[JARVIS] Hello {os.getenv('NAME')}. What are we doing today?")
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--ingest', help='URL to scrape and vectorise')
