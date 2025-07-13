@@ -4,7 +4,7 @@
 
 ---
 
-![Alt text](assets/Screenshot%202025-07-13%20152504.png)
+![Alt text](assets/Screenshot%202025-07-13%20182611.png)
 
 
 ## Features
