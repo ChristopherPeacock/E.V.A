@@ -10,10 +10,7 @@ from langchain.tools import Tool
 from langchain_core.prompts import PromptTemplate
 from typing import Any
 from langchain import hub
-import os
-import subprocess
-import shutil
-from tools import ping, nmap
+from tools import ping, nmap, searchDB, find
 
 embedder = OllamaEmbeddings(model="llama3.1:8b")
 VECTOR_PATH = "./vectorstore/chroma_index"
@@ -45,40 +42,11 @@ class CleanStreamingHandler(BaseCallbackHandler):
             print(token, end="", flush=True)
             self.text += token
 
-def find_file(command: str,) -> str:
-    try:
-        command = ['find', command ]
-        result = subprocess.run(command, capture_output=True, text=True, timeout=10)
-        if result.returncode == 0:
-            if command is None:
-                return F"couldnt find {command}"
-            else:
-                return F"the file is: {result.stderr}"
-    except Exception as e:
-        return f"error using command line: {str(e)}"
-    
-def search_vectorstore(query: str) -> str:
-    """Search the knowledge base for relevant information."""
-    try:
-        if not os.path.exists(VECTOR_PATH):
-            return "No knowledge base found. Use --ingest to add documents first."
-        
-        vs = Chroma(persist_directory=VECTOR_PATH, embedding_function=embedder)
-        docs = vs.similarity_search(query, k=3)
-        if docs:
-            results = "\n---\n".join([doc.page_content[:500] + "..." if len(doc.page_content) > 500 
-                                     else doc.page_content for doc in docs])
-            return f"📚 Knowledge base results for '{query}':\n{results}"
-        else:
-            return f"No relevant information found for '{query}' in knowledge base."
-    except Exception as e:
-        return f"Error searching knowledge base: {str(e)}"
-
 tools = [
     Tool(
         name="find file",
         description="Run command in the internal computers commandline, to find and locate files on the computer",
-        func=find_file
+        func=find.find_file
     ),
     Tool(
         name="nmap_scan",
@@ -93,14 +61,13 @@ tools = [
     Tool(
         name="search_knowledge",
         description="Search the ingested knowledge base for information on a topic",
-        func=search_vectorstore
+        func=searchDB.search_vectorstore
     )
 ]
-
    
 agent_prompt = PromptTemplate(
     input_variables=["input", "agent_scratchpad", "tools", "tool_names"],
-    template="""You are A.D.A.M, an AI assistant for IT and cybersecurity tasks.
+    template="""You an AI assistant for IT and cybersecurity tasks.
 
 You have access to the following tools:
 {tools}
