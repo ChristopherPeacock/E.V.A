@@ -49,7 +49,6 @@ llm_cli/
 └── README.md
 
 
----
 
 ### 1. Install Dependencies
 
