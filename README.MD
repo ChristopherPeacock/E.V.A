@@ -4,51 +4,31 @@
 
 ---
 
-## ⚙️ Features
+## Features
 
-- 🌐 **Web Scraper**: Ingests clean, readable content from any URL.
-- 🧠 **Local Knowledge Base**: Embeds documents using LangChain + OllamaEmbeddings + ChromaDB.
-- 🔍 **Smart Query Engine**: RAG & agent-based querying with tool invocation.
-- 🧰 **Integrated Tools**:
+- **Web Scraper**: Ingests clean, readable content from any URL.
+- **Local Knowledge Base**: Embeds documents using LangChain + OllamaEmbeddings + ChromaDB.
+- **Smart Query Engine**: RAG & agent-based querying with tool invocation.
+- **Integrated Tools**:
   - `nmap` scanner
   - `ping` connectivity check
   - `find` file locator
   - semantic knowledge search
-- 🧵 **Memory-Enhanced Agent**: React-based LangChain agent with conversational memory.
-- ⌨️ **Interactive Mode**: Stay in the terminal and interact in real-time.
+- **Memory-Enhanced Agent**: React-based LangChain agent with conversational memory.
+-  **Interactive Mode**: Stay in the terminal and interact in real-time.
 
 ---
 
-## 🧬 Stack
+##  Stack
 
 - `Python 3.10+`
 - [LangChain](https://github.com/langchain-ai/langchain)
 - [Ollama](https://ollama.com) (local LLM runner)
-- [llama3.1:8b](current running model, great for technical assistance)
+- [llama3.1:8b] (current running this model, great for technical assistance)
 - `Chroma` (vector DB)
 - `BeautifulSoup` (scraping)
 - `.env` for config
 - Modular tool handler using LangChain’s `Tool` wrapper
-
----
-
-## 🏗️ Project Structure
-
-llm_cli/
-├── tests/ 
-│       ├── test_embed.py 
-│       └── test_scrape.py
-├── utils/
-│       ├── scrape.py # Web scraper (BeautifulSoup)
-│       └── embed.py # Vector store & agent logic
-├── vectorstore/ # Chroma persistent store (git ignored)
-├── .env # Env vars for personalization
-├── example.env
-├── main.py
-├── requirements.txt
-└── README.md
-
-
 
 ### 1. Install Dependencies
 
