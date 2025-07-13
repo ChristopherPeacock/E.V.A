@@ -140,23 +140,19 @@ tools = [
 
    
 agent_prompt = PromptTemplate(
-    input_variables=["input", "agent_scratchpad"],
+    input_variables=["input", "agent_scratchpad", "tools", "tool_names"],
     template="""You are A.D.A.M, an AI assistant for IT and cybersecurity tasks.
 
 You have access to the following tools:
-- nmap_scan: Run nmap network scan on a target IP, hostname, or network range
-- ping_host: Ping a target host to check connectivity
-- netstat: Show current network connections and listening ports
-- search_knowledge: Search the ingested knowledge base for information
+{tools}
 
 Use the following format:
 
 Question: the input question you must answer
 Thought: you should always think about what to do
-Action: the action to take, should be one of [nmap_scan, ping_host, netstat, search_knowledge]
+Action: the action to take, should be one of [{tool_names}]
 Action Input: the input to the action
 Observation: the result of the action
-... (this Thought/Action/Action Input/Observation can repeat N times)
 Thought: I now know the final answer
 Final Answer: the final answer to the original input question
 
@@ -167,7 +163,7 @@ Question: {input}
 Thought: {agent_scratchpad}
 
 """
-    )
+)
 
 
 def get_vectorstore(text, source):
