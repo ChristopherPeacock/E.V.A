@@ -1,4 +1,4 @@
-# My own Ai CLI Assistant - Fun AI project to learn from
+# My Own Ai CLI Assistant - Fun AI project to learn from
 
 > _“ Hello Chris. What are we doing today?.”_
 
