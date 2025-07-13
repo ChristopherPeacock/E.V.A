@@ -1,0 +1,11 @@
+## requirements
+
+- langchain
+- faiss-cpu
+- sentence-transformers
+- beautifulsoup4
+- requests
+- transformers
+- torch
+- accelerate
+- dotenv
