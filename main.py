@@ -16,7 +16,7 @@ def interactive_loop():
                 print("[🔌] Shutting down. See you soon, Commander.")
                 break
             
-            print("\nJARVIS: ", end="", flush=True)
+            print("\nE.V.A: ", end="", flush=True)
             answer = query_jarvis(query, stream=True)
             print("\n")
             
