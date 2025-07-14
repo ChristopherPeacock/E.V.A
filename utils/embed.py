@@ -66,14 +66,13 @@ def add_to_vectorstore(text, source):
         # Create document with unique ID
         doc_id = generate_doc_id(text, source)
         
-        # Check if document already exists (optional - prevents duplicates)
         try:
-            # Try to get existing documents with same source
+            # can use vs.update here 
             existing_docs = vs.get(where={"source": source})
             if existing_docs and existing_docs['ids']:
                 print(f"Documents from source '{source}' already exist. Adding new content anyway.")
         except:
-            # If get() fails, continue with adding
+           
             pass
         
         # Split text into chunks
