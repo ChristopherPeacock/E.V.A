@@ -14,6 +14,7 @@ from tools import ping, nmap, searchDB, find
 import os
 import hashlib
 
+
 embedder = OllamaEmbeddings(model="llama3.1:8b")
 VECTOR_PATH = "./vectorstore/chroma_index"
 
@@ -82,9 +83,6 @@ def add_to_vectorstore(text, source):
         
         # Add documents to existing vectorstore
         vs.add_documents(chunks)
-        
-        # Note: persist() is not needed in newer Chroma versions
-        # Changes are automatically persisted
         
         print(f"Successfully added {len(chunks)} chunks from source: {source}")
         return True
