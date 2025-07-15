@@ -6,14 +6,21 @@ from utils.scrape import scrape_url
 from utils.embed import get_vectorstore, query_jarvis
 from dotenv import load_dotenv
 from visuals import eyes
+import config
 
 load_dotenv()
+
+config.debug = False
 
 def load_config(path='config.json'):
     if Path(path).exists():
         print("found file")
         with open(path) as f:
             return json.load(f)
+
+def debugModeOn():
+    config.debug = True
+    print('debug mode on!')
 
 
 def interactive_loop():
@@ -38,11 +45,10 @@ def main():
     eyes.animate_eyes()
     print(f"\n[E.V.A] Hello {os.getenv('NAME')}. What are we doing today?")
 
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--ingest', help='URL to scrape and vectorise')
     parser.add_argument('--ask', help='Ask a question to your assistant')
-    parser.add_argument('--debug', help='Do you want to put the debug mode on' )
+    parser.add_argument('--debug', action='store_true', help='Do you want to put the debug mode on' )
     args = parser.parse_args()
     
     if args.ingest:
@@ -58,8 +64,7 @@ def main():
         print("\n")
     
     if args.debug:
-        debug = args.debug if args.debug else config.get("debug", False)
-        print(f"debug mode is on:")
+        debugModeOn()
         
     interactive_loop()
 

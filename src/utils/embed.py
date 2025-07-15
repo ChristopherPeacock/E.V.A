@@ -14,6 +14,9 @@ from tools import ping, nmap, searchDB, find
 import os
 import hashlib
 
+import config
+
+config.debug #this is the flag to turn debug on or off
 
 embedder = OllamaEmbeddings(model="llama3.1:8b")
 VECTOR_PATH = "./vectorstore/chroma_index"
@@ -249,9 +252,11 @@ def query_vectorstore_ollama(question, stream=True):
         
         # Debug: Check retrieval
         docs = retriever.get_relevant_documents(question)
-        print(f"[DEBUG] Retrieved {len(docs)} relevant documents")
+        if config.debug:
+            print(f"[DEBUG] Retrieved {len(docs)} relevant documents")
         for i, doc in enumerate(docs):
-            print(f"[DEBUG] Doc {i+1}: {doc.page_content[:100]}... (Source: {doc.metadata.get('source', 'unknown')})")
+            if config.debug:
+                print(f"[DEBUG] Doc {i+1}: {doc.page_content[:100]}... (Source: {doc.metadata.get('source', 'unknown')})")
         
         if not docs:
             return {"result": "I couldn't find any relevant information in my knowledge base.", "source_documents": []}
@@ -286,7 +291,6 @@ def debug_vectorstore():
         
         print(f"✅ Found {len(all_docs['metadatas'])} documents in vectorstore")
         
-        # Group by source
         sources = {}
         for i, metadata in enumerate(all_docs['metadatas']):
             source = metadata.get('source', 'unknown')
@@ -305,25 +309,201 @@ def debug_vectorstore():
     except Exception as e:
         print(f"❌ Error inspecting vectorstore: {e}")
 
-def query_jarvis(question, stream=False):
-    """Main query function - detects if tools are needed"""
-    tool_keywords = ['scan', 'nmap', 'ping', 'network', 'connections', 'ports', 'find file', 'find']
+def create_chat_agent():
+    """Create a conversational agent that can chat AND use tools"""
+    llm = OllamaLLM(model="llama3.1:8b", temperature=0.7)
     
-    if any(keyword in question.lower() for keyword in tool_keywords):
-        return query_with_agent(question, stream=False)
-    else:
-        # Debug: Check if vectorstore has data
-        try:
-            vs = get_or_create_vectorstore()
-            all_docs = vs.get()
-            if all_docs and all_docs['metadatas']:
-                print(f"[DEBUG] Found {len(all_docs['metadatas'])} documents in vectorstore")
-                # Show some sources
+    # Enhanced prompt that handles both chat and tool usage
+    chat_prompt = PromptTemplate(
+        input_variables=["input", "agent_scratchpad", "tools", "tool_names", "chat_history"],
+        template="""You are E.V.A, an AI assistant for IT and cybersecurity tasks. You are helpful, conversational, and knowledgeable.
+
+Chat History:
+{chat_history}
+
+You have access to the following tools:
+{tools}
+
+For general conversation, respond naturally and helpfully. 
+For technical tasks, use the appropriate tools when needed.
+
+Use the following format when tools are needed:
+Question: the input question you must answer
+Thought: you should always think about what to do
+Action: the action to take, should be one of [{tool_names}]
+Action Input: the input to the action
+Observation: the result of the action
+Thought: I now know the final answer
+Final Answer: the final answer to the original input question
+
+For general chat, respond directly without using the tool format.
+
+Current input: {input}
+
+{agent_scratchpad}"""
+    )
+    
+    agent = create_react_agent(llm, tools, chat_prompt)
+    agent_executor = AgentExecutor(
+        agent=agent,
+        memory=memory,
+        tools=tools,
+        verbose=True,
+        max_iterations=3,
+        handle_parsing_errors=True
+    )
+    
+    return agent_executor
+
+def query_jarvis(question, stream=False):
+    """FIXED: Main query function - now properly handles both chat and database queries"""
+    
+    # First, check if vectorstore has any data
+    try:
+        vs = get_or_create_vectorstore()
+        all_docs = vs.get()
+        vectorstore_has_data = bool(all_docs and all_docs['metadatas'])
+        
+        if config.debug:
+            if vectorstore_has_data:
+                print(f"[DEBUG] Vectorstore has {len(all_docs['metadatas'])} documents")
                 sources = set(meta.get('source', 'unknown') for meta in all_docs['metadatas'])
                 print(f"[DEBUG] Sources: {list(sources)}")
             else:
-                print("[DEBUG] No documents found in vectorstore!")
-        except Exception as e:
+                print("[DEBUG] Vectorstore is empty!")
+                
+    except Exception as e:
+        if config.debug:
             print(f"[DEBUG] Error checking vectorstore: {e}")
-        
+        vectorstore_has_data = False
+    
+    # Determine query type
+    tool_keywords = ['scan', 'nmap', 'ping', 'network', 'connections', 'ports', 'find file', 'find']
+    knowledge_keywords = ['what is', 'explain', 'how to', 'tell me about', 'information about']
+    
+    needs_tools = any(keyword in question.lower() for keyword in tool_keywords)
+    needs_knowledge = any(keyword in question.lower() for keyword in knowledge_keywords)
+    
+    if needs_tools:
+        # Use agent for tool-based queries
+        return query_with_agent(question, stream=False)
+    
+    elif needs_knowledge and vectorstore_has_data:
+        # Use RAG for knowledge queries when vectorstore has data
+        if config.debug:
+            print("[DEBUG] Using RAG for knowledge query")
         return query_vectorstore_ollama(question, stream=stream)
+    
+    elif vectorstore_has_data:
+        # Try RAG first, fall back to chat if no relevant docs found
+        if config.debug:
+            print("[DEBUG] Trying RAG first, will fall back to chat if needed")
+        
+        rag_result = query_vectorstore_ollama(question, stream=stream)
+        
+        # If RAG didn't find relevant info, fall back to conversational mode
+        if (isinstance(rag_result, dict) and 
+            "couldn't find any relevant information" in rag_result.get("result", "")):
+            
+            if config.debug:
+                print("[DEBUG] RAG found no relevant info, falling back to chat")
+            
+            # Use simple LLM for chat
+            llm = OllamaLLM(model="llama3.1:8b", temperature=0.7)
+            
+            # Get chat history for context
+            chat_history = ""
+            if hasattr(memory, 'chat_memory') and memory.chat_memory.messages:
+                history_messages = memory.chat_memory.messages[-4:]
+                chat_history = "\n".join([f"{msg.type}: {msg.content}" for msg in history_messages])
+            
+            # Create chat prompt
+            chat_prompt = f"""You are E.V.A, a helpful AI assistant for IT and cybersecurity tasks. 
+            
+Previous conversation: {chat_history} Current question: {question} Please respond in a helpful, conversational manner."""
+            
+            try:
+                if stream:
+                    streaming_handler = CleanStreamingHandler()
+                    llm_with_stream = OllamaLLM(model="llama3.1:8b", temperature=0.7, callbacks=[streaming_handler])
+                    response = llm_with_stream.invoke(chat_prompt)
+                    result = {"result": streaming_handler.text}
+                else:
+                    response = llm.invoke(chat_prompt)
+                    result = {"result": response}
+                
+                # Save to memory
+                memory.save_context({"input": question}, {"output": result["result"]})
+                return result
+                
+            except Exception as e:
+                error_msg = f"Chat error: {str(e)}"
+                memory.save_context({"input": question}, {"output": error_msg})
+                return {"result": error_msg}
+        
+        else:
+            # RAG found relevant information, save to memory and return
+            memory.save_context({"input": question}, {"output": rag_result.get("result", "")})
+            return rag_result
+    
+    else:
+        # No vectorstore data, use conversational mode
+        if config.debug:
+            print("[DEBUG] No vectorstore data, using conversational mode")
+        
+        # Simple chat mode when no knowledge base is available
+        llm = OllamaLLM(model="llama3.1:8b", temperature=0.7)
+        
+        # Get chat history for context
+        chat_history = ""
+        if hasattr(memory, 'chat_memory') and memory.chat_memory.messages:
+            history_messages = memory.chat_memory.messages[-4:]
+            chat_history = "\n".join([f"{msg.type}: {msg.content}" for msg in history_messages])
+        
+        # Create chat prompt
+        chat_prompt = f"""You are E.V.A, a helpful AI assistant for IT and cybersecurity tasks. Previous conversation:{chat_history}
+            Current question: {question} 
+            Please respond in a helpful, conversational manner. If you need access to specific documents or knowledge base, let the user know they can provide them."""
+        
+        try:
+            if stream:
+                streaming_handler = CleanStreamingHandler()
+                llm_with_stream = OllamaLLM(model="llama3.1:8b", temperature=0.7, callbacks=[streaming_handler])
+                response = llm_with_stream.invoke(chat_prompt)
+                result = {"result": streaming_handler.text}
+            else:
+                response = llm.invoke(chat_prompt)
+                result = {"result": response}
+            
+            # Save to memory
+            memory.save_context({"input": question}, {"output": result["result"]})
+            return result
+            
+        except Exception as e:
+            error_msg = f"Chat error: {str(e)}"
+            memory.save_context({"input": question}, {"output": error_msg})
+            return {"result": error_msg}
+
+# Helper function to test the system
+def test_system():
+    """Test function to verify everything works"""
+    print("=== Testing E.V.A System ===\n")
+    
+    # Test 1: Check vectorstore
+    print("1. Testing vectorstore...")
+    debug_vectorstore()
+    
+    # Test 2: Simple chat
+    print("\n2. Testing simple chat...")
+    result = query_jarvis("Hello, how are you?")
+    print(f"Response: {result['result']}")
+    
+    # Test 3: Knowledge query (if vectorstore has data)
+    print("\n3. Testing knowledge query...")
+    result = query_jarvis("What information do you have available?")
+    print(f"Response: {result['result']}")
+    
+    print("\n=== Test Complete ===")
+
+if __name__ == "__main__":
+    test_system()
