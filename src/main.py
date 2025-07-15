@@ -53,6 +53,10 @@ def main():
     
     if args.ingest:
         print(f"[+] Scraping and indexing: {args.ingest}")
+        # i want check if the args are a url? or a diffrent format 
+        # if diffrent create seprate fucntion
+        # check with LLm and that retreives the format for me!
+
         text = scrape_url(args.ingest)
         get_vectorstore(text, args.ingest)
         print("[✓] Knowledge ingested and vectorised.")
