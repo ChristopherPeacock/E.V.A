@@ -73,7 +73,8 @@ def add_to_vectorstore(text, source):
             # can use vs.update here 
             existing_docs = vs.get(where={"source": source})
             if existing_docs and existing_docs['ids']:
-                print(f"Documents from source '{source}' already exist. Adding new content anyway.")
+                vs.update_documents(existing_docs, existing_docs["ids"])
+                print(f"Documents from source '{source}' already exist. Updated with most recent data ingested.")
         except:
            
             pass
